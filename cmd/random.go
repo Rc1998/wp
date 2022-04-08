@@ -22,74 +22,54 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"fmt"
-	"io"
-	"log"
-	"os"
-	"os/exec"
+	"io/fs"
+	"math/rand"
+	"path/filepath"
+	"time"
 
-	"github.com/h2non/filetype"
 	"github.com/spf13/cobra"
 )
 
-// setCmd represents the set command
-var setCmd = &cobra.Command{
-	Use:   "set",
-	Short: "Set a given image as a wallpaper",
+var count = 0
+var fileName string
+var fileList = make([]string, 10)
+
+// randomCmd represents the random command
+var randomCmd = &cobra.Command{
+	Use:   "random",
+	Short: "Picks a random image in a directory to use as the wallpaper",
 	Long:  ``,
 	Args:  cobra.MinimumNArgs(1),
 
 	Run: func(cmd *cobra.Command, args []string) {
 
-		// ensure file is an image
-		if !validateImg(args[0]) {
-			fmt.Printf("Error: %s is not a valid image\n", args[0])
-			os.Exit(1)
+		// walk through the given directory recursivly to select a wallpaper
+		e := filepath.WalkDir(args[0], walk)
+		check(e)
+
+		randNum := rand.Intn(count)
+
+		for !validateImg(fileList[randNum]) {
+			randNum = rand.Intn(count)
 		}
 
-		setWallpaper(args[0])
+		setWallpaper(fileList[randNum])
 
 	},
 }
 
-func setWallpaper(imgName string) {
-	// copy image to $XDG_CONFIG_HOME/wallpaper
-	srcImg, e := os.Open(imgName) // new image to use
-	check(e)
-	wallFile, e := os.Create(WALL_PATH) // destination
-	check(e)
-	defer srcImg.Close()
-	defer wallFile.Close()
-
-	_, e = io.Copy(wallFile, srcImg)
-	check(e)
-
-	e = wallFile.Sync()
-	check(e)
-
-	// set as wallpaper
-	err := exec.Command("feh", "--no-fehbg", "--bg-fill", WALL_PATH).Run()
+func walk(s string, d fs.DirEntry, err error) error {
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	message := "Image " + imgName + " set as wallpaper."
-	err = exec.Command("notify-send", message).Run()
-}
-
-func validateImg(fileName string) bool {
-
-	file, e := os.Open(fileName)
-	check(e)
-	defer file.Close()
-
-	// check for valid image
-	head := make([]byte, 261)
-	file.Read(head)
-
-	return filetype.IsImage(head)
-
+	if !d.IsDir() {
+		fileList = append(fileList, s)
+		count++
+	}
+	return nil
 }
 
 func init() {
-	rootCmd.AddCommand(setCmd)
+	rootCmd.AddCommand(randomCmd)
+	rand.Seed(time.Now().UnixNano())
 }
