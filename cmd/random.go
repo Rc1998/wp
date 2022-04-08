@@ -39,13 +39,19 @@ var randomCmd = &cobra.Command{
 	Use:   "random",
 	Short: "Picks a random image in a directory to use as the wallpaper",
 	Long:  ``,
-	Args:  cobra.MinimumNArgs(1),
 
 	Run: func(cmd *cobra.Command, args []string) {
 
+		// use either provided directory or configured directory
+		if len(args) < 1 {
+			e := filepath.WalkDir(DIR, walk)
+			check(e)
+		} else {
+			e := filepath.WalkDir(args[0], walk)
+			check(e)
+		}
+
 		// walk through the given directory recursivly to select a wallpaper
-		e := filepath.WalkDir(args[0], walk)
-		check(e)
 
 		randNum := rand.Intn(count)
 
