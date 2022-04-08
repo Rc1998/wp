@@ -22,26 +22,33 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"log"
 	"os"
 
 	"github.com/spf13/cobra"
 )
 
+var WALL_PATH = getWallPath("WP_WALL_PATH")
+var DIR = getDirPath("WP_DIR")
 
+// TODO: add nitrogen as alternative
+var ENGINE = "feh"
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "wp",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
+	Short: "wallpaper - Select, at will or random, an image to use as a wallpaper",
+	Long: `wallpaper - Given an image or directory, wp will set that image or a
+random image from the given directory and set is as the background. 
+	
+	wp
+	wp random /some/directory/of/images
+	wp set /some/image/file.png`,
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	//Run: func(cmd *cobra.Command, args []string) { },
+
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -53,16 +60,35 @@ func Execute() {
 	}
 }
 
+var dir string
+
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.wp.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// rootCmd.PersistentFlags().StringVarP(&dir, "dir", "d", "~/Images", "Directory of images")
 }
 
+// TOTALLY FLAWLESS ERROR HANDLING
+func check(e error) {
+	if e != nil {
+		log.Fatal(e)
+		os.Exit(2)
+	}
+}
 
+func getWallPath(key string) string {
+	val, e := os.LookupEnv(key)
+	if !e {
+		return os.ExpandEnv("$HOME/.config/wallpaper")
+	} else {
+		return val
+	}
+}
+
+func getDirPath(key string) string {
+	val, e := os.LookupEnv(key)
+	if !e {
+		return os.ExpandEnv("$HOME/Images")
+	} else {
+		return val
+	}
+}
