@@ -45,8 +45,6 @@ random image from the given directory and set is as the background.
 	wp random /some/directory/of/images
 	wp set /some/image/file.png`,
 
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
 	//Run: func(cmd *cobra.Command, args []string) { },
 
 }
