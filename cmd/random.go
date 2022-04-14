@@ -32,7 +32,7 @@ import (
 
 var count = 0
 var fileName string
-var fileList = make([]string, 10)
+var fileList = make([]string, 1)
 var recursion bool
 
 // randomCmd represents the random command
@@ -54,7 +54,7 @@ var randomCmd = &cobra.Command{
 
 		// walk through the given directory recursivly to select a wallpaper
 
-		randNum := rand.Intn(count)
+		randNum := rand.Intn(count - 1)
 
 		for !validateImg(fileList[randNum]) {
 			randNum = rand.Intn(count)
