@@ -30,9 +30,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var count = 0
 var fileName string
-var fileList = make([]string, 1)
+var fileList = []string{}
 var recursion bool
 
 // randomCmd represents the random command
@@ -54,13 +53,13 @@ var randomCmd = &cobra.Command{
 
 		// walk through the given directory recursivly to select a wallpaper
 
-		randNum := rand.Intn(count - 1)
+		selection := rand.Intn(len(fileList))
 
-		for !validateImg(fileList[randNum]) {
-			randNum = rand.Intn(count)
+		for !validateImg(fileList[selection]) {
+			selection = rand.Intn(len(fileList))
 		}
 
-		setWallpaper(fileList[randNum])
+		setWallpaper(fileList[selection])
 
 	},
 }
@@ -71,7 +70,6 @@ func walk(s string, d fs.DirEntry, err error) error {
 	}
 	if !d.IsDir() {
 		fileList = append(fileList, s)
-		count++
 	}
 	return nil
 }
