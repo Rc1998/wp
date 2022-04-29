@@ -77,6 +77,4 @@ func walk(s string, d fs.DirEntry, err error) error {
 func init() {
 	rootCmd.AddCommand(randomCmd)
 	rand.Seed(time.Now().UnixNano())
-	// TODO: implement
-	randomCmd.Flags().BoolVarP(&recursion, "recursive", "r", false, "Search every subdirectory for images.")
 }

@@ -30,6 +30,7 @@ import (
 
 var WALL_PATH = getWallPath("WP_WALL_PATH")
 var DIR = getDirPath("WP_DIR")
+var CACHE = os.ExpandEnv("$XDG_CACHE_HOME")
 
 // TODO: add nitrogen as alternative
 var ENGINE = "feh"
