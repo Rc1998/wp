@@ -35,12 +35,13 @@ import (
 var imgUrl string
 
 // wallhaven API parameters
-var q string                    // search term
-var categories = "111"          // 100, 110, 111 (general, anime, people)
-var purity = "110"              // 100, 110, 111 (sfw/sketchy/nsfw)
-var minResolution = "3840x2160" // 1920x1080
-var apiKey string               // users api key
-// TODO: investigate config file
+var q string             // search term
+var categories string    // 100, 110, 111 (general, anime, people)
+var purity string        // 100, 110, 111 (sfw/sketchy/nsfw)
+var minResolution string // 1920x1080
+var apiKey string        // users api key
+var havenDir = os.Getenv("WP_HAVEN_DIR")
+var CACHE = os.Getenv("XDG_CACHE_HOME")
 
 // havenCmd represents the haven command
 var havenCmd = &cobra.Command{
@@ -49,11 +50,24 @@ var havenCmd = &cobra.Command{
 	Long: `haven - pull a random wallpaper from wallhaven.cc and set it as your wallpaper
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// construct url using flags/defaults
-		url := buildUrl()
 
-		//fmt.Println(url)
-		//os.Exit(1)
+		// set defaults for categories and purity
+		if categories == "" {
+			categories = "100"
+		}
+
+		if purity == "" {
+			purity = "100"
+		}
+
+		if havenDir == "" {
+			havenDir = CACHE + "/wallhaven"
+		}
+
+		// construct url using flags/defaults
+		url := buildApiCall()
+
+		checkApiKey()
 
 		response, err := http.Get(url)
 		check(err)
@@ -85,7 +99,8 @@ var havenCmd = &cobra.Command{
 		defer response.Body.Close()
 
 		// create file to store image
-		saveImg, err := os.Create(os.ExpandEnv("$XDG_CACHE_HOME/wp_haven_dl"))
+		imgName := buildImgName(data)
+		saveImg, err := os.Create(havenDir + "/" + imgName)
 		check(err)
 		defer saveImg.Close()
 
@@ -94,9 +109,7 @@ var havenCmd = &cobra.Command{
 		check(err)
 
 		// set wallpaper
-		setWallpaper(os.ExpandEnv("$XDG_CACHE_HOME/wp_haven_dl"))
-
-		// expand for flags (api preferences, defaults: sfw, no user api, random imgaes)
+		setWallpaper(havenDir + "/" + imgName)
 
 	},
 }
@@ -106,21 +119,47 @@ func init() {
 
 	// TODO: implement flags for options
 
-	havenCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	havenCmd.Flags().StringVarP(&categories, "categories", "c", os.Getenv("WP_HAVEN_CAT"), "Set categories to include (1) or exclude (0) (general, anime, people)")
+	havenCmd.Flags().StringVarP(&purity, "purity", "p", os.Getenv("WP_HAVEN_PUR"), "Set purity to include (1) or exclude (0) (sfw, sketchy, nsfw)")
+	havenCmd.Flags().StringVarP(&q, "search", "s", "", "Search term to look for images")
+	havenCmd.Flags().StringVarP(&minResolution, "resolution", "r", "3840x2160", "Minimum resolution [width]x[height]")
+	havenCmd.Flags().StringVarP(&apiKey, "apikey", "a", os.Getenv("WP_HAVEN_API"), "Your wallhaven api key, required for nsfw imgaes")
+
 }
 
-func buildUrl() string {
+func buildImgName(data havenData) string {
+	imgNameStr := strings.Builder{}
+	imgNameStr.WriteString("wallhaven-")
+	imgNameStr.WriteString(data.Data[0].ID)
+
+	imgType := data.Data[0].FileType
+
+	switch {
+	case imgType == "image/jpeg":
+		imgNameStr.WriteString(".jpg")
+	case imgType == "image/png":
+		imgNameStr.WriteString(".png")
+	default:
+		imgNameStr.WriteString(".jpg")
+	}
+
+	return imgNameStr.String()
+}
+
+func buildApiCall() string {
 
 	// "https://wallhaven.cc/api/v1/search?sorting=random&purity=110&q=space"
 	// get all options
 	str := strings.Builder{}
-	str.WriteString("https://wallhaven.cc/api/v1/search?sorting=random&")
-	str.WriteString("purity=")
+	str.WriteString("https://wallhaven.cc/api/v1/search?sorting=random")
+	str.WriteString("&purity=")
 	str.WriteString(purity)
 	str.WriteString("&categories=")
 	str.WriteString(categories)
 	str.WriteString("&atleast=")
 	str.WriteString(minResolution)
+	str.WriteString("&q=")
+	str.WriteString(q)
 
 	if len(apiKey) > 1 {
 		str.WriteString("&apikey=")
@@ -128,6 +167,13 @@ func buildUrl() string {
 	}
 
 	return str.String()
+}
+
+func checkApiKey() {
+	if apiKey == "" && purity[2] == '1' {
+		log.Fatal("API key incorrect or not provided. NSFW images requires an API key")
+		os.Exit(2)
+	}
 }
 
 type havenData struct {

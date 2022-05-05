@@ -28,9 +28,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var WALL_PATH = getWallPath("WP_WALL_PATH")
-var DIR = getDirPath("WP_DIR")
-var CACHE = os.ExpandEnv("$XDG_CACHE_HOME")
+var WALL_PATH = os.Getenv("WP_WALL_PATH")
+var DIR = os.Getenv("WP_DIR")
 
 // TODO: add nitrogen as alternative
 var ENGINE = "feh"
@@ -71,23 +70,5 @@ func check(e error) {
 	if e != nil {
 		log.Fatal(e)
 		os.Exit(2)
-	}
-}
-
-func getWallPath(key string) string {
-	val, e := os.LookupEnv(key)
-	if !e {
-		return os.ExpandEnv("$HOME/.config/wallpaper")
-	} else {
-		return val
-	}
-}
-
-func getDirPath(key string) string {
-	val, e := os.LookupEnv(key)
-	if !e {
-		return os.ExpandEnv("$HOME/Images")
-	} else {
-		return val
 	}
 }
